@@ -2,7 +2,7 @@
  * Created by OLEG on 22.01.2016.
  */
 
-
+'use strict'
 class Dispatcher{
 	constructor(){
 		this._callbacks = [];
@@ -37,6 +37,13 @@ class Dispatcher{
 		}
 	}
 
+	dispatchAction(type, data, error){
+		this.dispatch({
+			type: type,
+			data: data,
+			error: error
+		});
+	}
 
 	isDispatching() {
 		return this._isDispatching;
@@ -63,7 +70,7 @@ class Dispatcher{
 		this._isHandled[id] = true;
 	}
 
-	_startDispatching(payload): void {
+	_startDispatching(payload) {
 		for (var id in this._callbacks) {
 			this._isPending[id] = false;
 			this._isHandled[id] = false;
@@ -78,3 +85,6 @@ class Dispatcher{
 	}
 
 }
+
+
+module.exports.instance = new Dispatcher();

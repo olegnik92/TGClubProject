@@ -6,9 +6,10 @@
 process.env.NODE_ENV = process.env.NODE_ENV || 'development'
 process.env.DEBUG = process.env.DEBUG || 'tgc:*'
 
-var app = require('./app');
-var debug = require('debug')('tgc:start');;
+var app = require('./expressApp');
+var debug = require('debug')('tgc:start');
 var http = require('http');
+var wsHub = require('./wsHub').instace;
 
 debug(`NODE_ENV ${process.env.NODE_ENV}`);
 
@@ -19,6 +20,7 @@ var server = http.createServer(app);
 server.listen(port);
 server.on('error', onError);
 server.on('listening', onListening);
+wsHub.init(server);
 process.on('uncaughtException', (err) => {
 	console.log(`Caught exception: ${err}`);
 	debug(`--- CAUGHT GLOBAL exception: ${err}`)

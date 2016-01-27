@@ -11,9 +11,3 @@ appRoot.id="AppRoot";
 document.body.insertBefore(appRoot, null);
 ReactDOM.render(React.createElement(MainLayout),appRoot);
 
-if(DEBUG){
-	console.log('app run in DEBUG mode');
-	var p = new Promise(function(resolve, reject){
-		setTimeout(resolve, 1000);
-	});
-}

@@ -8,8 +8,8 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-
-
+var auth = require('./services/auth').instance;
+var debug = require('debug')('tgc:expressApp');
 
 
 
@@ -19,6 +19,18 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.post('/login', function(req, res){
+	if(!req.body.login || !req.body.password)
+		return;
+
+	auth.login(req.body.login, req.body.password)
+		.then((user) => {
+			res.status(200).send(user);
+		}, (error) =>{
+			res.status(403).send({error: error});
+		});
+});
 
 
 // catch 404 and forward to error handler
