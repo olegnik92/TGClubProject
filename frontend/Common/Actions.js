@@ -4,6 +4,7 @@
 
 var dispatcher = require('../Utils/Dispatcher').instance;
 var wsActions = require('../Utils/WSUtils').actionTypes;
+var serviceActions = require('../../actions/chat').instance;
 var ws = require('../Utils/WSUtils').instance;
 
 function createAction(type){
@@ -15,14 +16,6 @@ function createAction(type){
 	}
 }
 
-function createWsAction(type){
-	return{
-		type: type,
-		emit: function(data, error){
-			ws.sendAction(type, data, error);
-		}
-	}
-}
 
 module.exports.instance = {
 	userSignIn: createAction('USER_SIGN_IN'),
@@ -30,6 +23,8 @@ module.exports.instance = {
 	userSendAuthData: createAction('USER_SEND_AUTH_DATA'),
 	userAuthOK: createAction('USER_AUTH_OK'),
 	userAuthFail: createAction('USER_AUTH_FAIL'),
-	openWsConnection: createWsAction('WS_AUTH_LOGIN'),
-	wsConnectionDead: createAction(wsActions.dead)
+	wsConnectionDead: createAction(wsActions.dead),
+	userSendMessage: createAction(serviceActions.userSendMessage)
 }
+
+module.exports.createAction = createAction;

@@ -44,6 +44,15 @@ var config = {
 					console.log('%s webpack emit compile', new Date());
 				});
 
+				compiler.plugin("done", function(stats)
+				{
+					if (stats.compilation.errors && stats.compilation.errors.length)
+					{
+						console.error(stats.compilation.errors);
+					}
+
+				});
+
 			}
 		},
 		new webpack.NoErrorsPlugin(),

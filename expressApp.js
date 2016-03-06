@@ -10,7 +10,7 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var auth = require('./services/auth').instance;
 var debug = require('debug')('tgc:expressApp');
-
+var chat = require('./services/chat').instance;
 
 
 var app = express();
@@ -32,6 +32,19 @@ app.post('/login', function(req, res){
 		});
 });
 
+
+app.post('/logout', function(req, res){
+	if(!req.body.login || !req.body.token)
+		return;
+
+	auth.logout(req.body.login, req.body.token)
+		.then(() =>{
+			res.status(200).send({done: true});
+		}, (error) =>{
+			res.status(403).send({error: error});
+		});
+
+});
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

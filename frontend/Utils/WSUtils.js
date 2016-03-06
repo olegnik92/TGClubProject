@@ -17,39 +17,43 @@ var messageTypes = {
 
 class WSConnection{
 	constructor(){
-
-		if(typeof (WebSocket) === 'undefined'){//for server side
-			return;
-		}
-
 		this._host = `ws://${window.location.host}`;
-		this._reconnectTimeout = 5000;
+		this._reconnectTimeout = 10000;
 		this._reconnects = 0;
 		this._reconnectDeadLine = 6;
 		this._messageQueue = [];
 		this._sendIntervalRef = 0;
 		this._sendIntervalTime = 100;
 		this._ws = null;
-		this._isInit = false;
+
+		this._init();
+		setInterval(() =>{
+			if(!this._ws || this._ws.readyState !== 1){
+				this._init();
+			}
+		}, this._reconnectTimeout)
 
 	}
 
 	sendAction(type, data, error){
 		this._messageQueue.push({type: type, data: data, error: error})
-		if(!this._isInit){
-			this._init();
-		}
 	}
 
 
 	_init(){
 		var self = this;
+		var loginData = JSON.parse(sessionStorage.getItem('loginData'));
+		if(!loginData || !loginData.login || !loginData.token){
+			this._reconnects = 0;
+			return;
+		}
+
 		if(this._reconnects > this._reconnectDeadLine){
 			Dispatcher.dispatchAction(messageTypes.dead);
 			return;
 		}
 
-		this._ws = new WebSocket(this._host);
+		this._ws = new WebSocket(this._host + `/${loginData.login}&${loginData.token}`);
 		this._ws.onopen = function(event){
 			Dispatcher.dispatchAction(messageTypes.open, event);
 			self._sendIntervalRef = setInterval(self._sendFromQueue.bind(self), self._sendIntervalTime);
@@ -60,12 +64,8 @@ class WSConnection{
 		};
 
 		this._ws.onclose = function(event){
-			self._ws = null;
 			Dispatcher.dispatchAction(messageTypes.close, event);
 			clearInterval(self._sendIntervalRef);
-			setTimeout(function(){
-				this._init();
-			}, this._reconnectTimeout);
 		};
 
 		this._ws.onmessage = function(event){
@@ -75,7 +75,6 @@ class WSConnection{
 			});
 		};
 
-		this._isInit = true;
 		this._reconnects++;
 	}
 
@@ -94,4 +93,21 @@ class WSConnection{
 };
 
 module.exports.actionTypes = messageTypes;
-module.exports.instance = new WSConnection();
+
+var ws = new WSConnection();
+module.exports.instance = ws;
+
+module.exports.actionsProxy = function(actionsObj){
+	var result = {};
+	for(let action of Object.keys(actionsObj)){
+		result[action] = {
+			type: actionsObj[action],
+			emit: function(data, error) {
+				ws.sendAction(this.type, data, error)
+			}
+		};
+	}
+
+	return result;
+}
+

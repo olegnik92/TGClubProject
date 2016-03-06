@@ -25,10 +25,10 @@ module.exports = React.createClass({
 		return (
 			<div className="LoginForm">
 				<div className="LoginForm-login">
-					<TextBox placeholder={'Логин'} defaultValue={this.state.login} onChange={(val) => {this.state.login = val;}}></TextBox>
+					<TextBox label="Логин" value={this.state.login} onChange={(val) => {this.setState({login: val});}}></TextBox>
 				</div>
 				<div className="LoginForm-password">
-					<TextBox placeholder={'Пароль'} defaultValue={this.state.password} onChange={(val) => {this.state.password = val;}}></TextBox>
+					<TextBox label="Пароль" value={this.state.password} onChange={(val) => {this.setState({password: val});}}></TextBox>
 				</div>
 				<div className="LoginForm-submit">
 					<Button caption="Войти" onClick={this.onSubmit}></Button>

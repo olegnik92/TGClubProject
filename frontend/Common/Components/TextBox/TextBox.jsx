@@ -9,48 +9,52 @@ var React = require('react');
 module.exports = React.createClass({
 
 	propTypes:{
-		placeholder: React.PropTypes.string,
+		value: React.PropTypes.string,
 		label: React.PropTypes.string,
-		defaultValue: React.PropTypes.string,
 		masked: React.PropTypes.bool,
 		validator: React.PropTypes.func,
+		strongValidation: React.PropTypes.bool,
 		onChange: React.PropTypes.func,
-		readOnly: React.PropTypes.bool
+		readOnly: React.PropTypes.bool,
 	},
 
 	getDefaultProps: function(){
 		return {
-			onChange: function(){}
+			value: '',
+			onChange: function(){},
+			validator: function(){}
 		}
 	},
 
 	getInitialState: function(){
 		return {
-			value: this.props.defaultValue || '',
 			inputType: this.props.masked ? 'password' : 'text'
 		}
 	},
 
 	onValueChanged: function(event){
-		this.setState({value: event.target.value});
 		this.props.onChange(event.target.value);
 	},
 
 	render: function(){
+		var mainModifiers = this.props.value ? '' : ' TextBox--empty';
 		return (
-			<div className="TextBox">
+
+			<div className={'TextBox' + mainModifiers}>
 				{(() =>{
 					if(this.props.label){
-						return (<span className="TextBox-label">{this.props.label}</span>)
+						return (<label className="TextBox-label">{this.props.label}</label>)
 					}
 				})()}
 
-				<input className="TextBox-input" type={this.state.inputType} placeholder={this.props.placeholder} value={this.state.value} onChange={this.onValueChanged}/>
+				<input className="TextBox-input" type={this.state.inputType} value={this.props.value} onChange={this.onValueChanged}/>
 				{(() =>{
 					if(this.props.masked){
 						return (<span className="TextBox-unmaskButton">unmask</span>)
 					}
 				})()}
+
+				<span className="TextBox-validationInfo"></span>
 			</div>
 		);
 	}

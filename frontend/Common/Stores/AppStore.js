@@ -19,7 +19,7 @@ class AppStore extends Store{
 				case actions.userSignIn.type:{
 					return this.onUserSignIn(action.data);
 				}
-				case actions.userSignOut:{
+				case actions.userSignOut.type:{
 					return this.onUserSignOut();
 				}
 				case actions.wsConnectionDead.type:{
@@ -28,9 +28,6 @@ class AppStore extends Store{
 			}
 		});
 		this.initFromStore();
-		if(this._login && this._token){
-			actions.openWsConnection.emit({login: this._login, token: this._token});
-		}
 	}
 
 	initFromStore(){
@@ -66,10 +63,10 @@ class AppStore extends Store{
 		sessionStorage.setItem('loginData', JSON.stringify(data));
 		this.initFromStore();
 		this.stateChanged();
-		actions.openWsConnection.emit(data);
 	}
 
 	onUserSignOut(){
+		http.post('/logout', {login: this._login, token: this._token});
 		sessionStorage.removeItem('loginData');
 		this.initFromStore();
 		this.stateChanged();

@@ -1,0 +1,23 @@
+
+@import '../../../common.styl'
+.DialogOverlay{
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background-color: rgba(150,150,150, 0.5);
+
+  &-box{
+    position absolute;
+    top 50%;
+    left 50%;
+    transform translate(-50%, -50%)
+    background-color green;
+  }
+
+  &-headerCloseButton{
+    float right;
+    cursor pointer;
+  }
+}

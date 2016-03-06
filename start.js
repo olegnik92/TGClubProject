@@ -9,7 +9,7 @@ process.env.DEBUG = process.env.DEBUG || 'tgc:*'
 var app = require('./expressApp');
 var debug = require('debug')('tgc:start');
 var http = require('http');
-var wsHub = require('./wsHub').instace;
+var wsHub = require('./wsHub').instance;
 
 debug(`NODE_ENV ${process.env.NODE_ENV}`);
 

@@ -15,7 +15,8 @@ const actionTypes = {
 var _debugPass = 'w';
 
 var _errors = [
-	'Неверный логин или пароль'
+	'Неверный логин или пароль',
+	'Неверные данные разлогирования'
 ];
 
 class Auth extends EventEmitter {
@@ -46,16 +47,28 @@ class Auth extends EventEmitter {
 		});
 	}
 
-	logout(login){
-		if(this._users[login]){
-			debug(`${actionTypes.userLogout} ${login}`);
-			this.emit(actionTypes.userLogout, login);
-			delete this._users[login];
-		}
+	logout(login, token){
+		var self =  this;
+		return new Promise(function(resolve, reject){
+			if(self._users[login] && self._users[login].token === token){
+				debug(`${actionTypes.userLogout} ${login}`);
+				delete self._users[login];
+				self.emit(actionTypes.userLogout, login);
+				resolve();
+			} else {
+				debug(`error ${actionTypes.userLogout} ${login} ${_errors[1]}`);
+				reject(_errors[1]);
+			}
+		});
+
 	}
 
 	getUser(login){
 		return this._users[login];
+	}
+
+	getUsers(){
+		return Object.keys(this._users).map(key => this._users[key]);
 	}
 
 }

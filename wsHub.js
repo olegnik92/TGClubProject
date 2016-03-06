@@ -8,17 +8,20 @@ var WebSocketServer = require('ws').Server;
 var debug = require('debug')('tgc:wsHub');
 var authModule = require('./services/auth');
 var auth = authModule.instance;
-var actions = require('./frontend/Common/Actions').instance;
 var utils = require('./services/utils').instance;
 
 class WSClient{
-	constructor(login){
+	constructor(login, token){
 		this.login = login;
+		this.token = token;
 		this._ws = null;
 		this._queue = [];
 		this._sendInterval = 100;
 		this._intervalRef = setInterval(this._sendQueue.bind(this), this._sendInterval);
-
+		this._checkInterval = 30000;
+		this._connectionChecksFaildCount = 0;
+		this._connectionChecksDeadLine = 4;
+		this._connectionCheckIntervalRef = setInterval(this._checkConnection.bind(this), this._checkInterval);
 	}
 
 	send(actionType, data, error){
@@ -26,38 +29,60 @@ class WSClient{
 	}
 
 	destroy(){
+		clearInterval(this._connectionCheckIntervalRef);
 		clearInterval(this._intervalRef);
-		this.send('AUTH_LOGIN_REUSED', null, 'Логин был использован кем-то другим');
 		this._sendQueue();
 		this._ws.close()
 	}
 
 	setWs(ws){
+		if(this._ws){
+			this._ws.close();
+		}
 		this._ws = ws;
 	}
 
-	_sendQueue(){
-		while (this._queue.length > 0){
-			if(!this._ws){
-				break;
-			}
-
-			var message = JSON.stringify(this._queue.shift());
-			this._ws.send(message, function(error){
-				if(error){
-					debug('!! --- WS SEND ERROR --- !!')
-					debug(error);
-				}
-				debug(message);
-			});
+	_checkConnection(){
+		if(this._ws && this._ws.readyState === 1){
+			this._connectionChecksFaildCount = 0;
+		} else {
+			this._connectionChecksFaildCount++;
 		}
+
+		if(this._connectionChecksFaildCount > this._connectionChecksDeadLine){
+			debug(`ws connection dead, user ${this.login} - ${this.token} will be logouted`);
+			auth.logout(this.login, this.token);
+		}
+	}
+
+	_sendQueue(){
+		try{
+			while (this._queue.length > 0){
+				if(!this._ws || this._ws.readyState !== 1){
+					break;
+				}
+
+				var message = JSON.stringify(this._queue.shift());
+				this._ws.send(message, function(error){
+					if(error){
+						debug('!! --- WS SEND ERROR --- !!')
+						debug(error);
+					}
+					debug(message);
+				});
+			}
+		} catch(error) {
+			debug(error);
+		}
+
 	}
 }
 
 var actionTypes = {
 	connection: 'WSS_CONNECTION',
 	message: 'WSS_MESSAGE',
-	clientClose: 'WSS_CLIENT_CLOSE'
+	clientClose: 'WSS_CLIENT_CLOSE',
+	connectionClosed: 'WSS_CONNECTION_CLOSED'
 }
 
 class WSHub extends EventEmitter {
@@ -79,15 +104,15 @@ class WSHub extends EventEmitter {
 		this._wss = new WebSocketServer({server: httpServer});
 		this._wss.on('connection', (ws) => {
 			ws.webSocketID  = utils.guid();
-			debug(`ws new connection ${ws.webSocketID}`);
-			this.emit(actionTypes.connection, ws);
-			ws.isWsConnectionAuthed = false;
-			setTimeout(() => {
-				if(!ws.isWsConnectionAuthed) {
-					ws.close();
-				}
-			}, this._notAuthCloseTime);
+			var loginData = this.getLoginDataFromUrl(ws.upgradeReq.url);
+			debug(`ws try open new connection --- ${JSON.stringify(loginData)} --- ${ws.webSocketID}`);
+			ws.isWsConnectionAuthed = this.createWsClient(ws, loginData);
+			if(!ws.isWsConnectionAuthed){
+				ws.close();
+				return;
+			}
 
+			this.emit(actionTypes.connection, ws);
 			ws.on('message', (message) => {
 				debug(`ws receive message ${ws.webSocketID} --- ${message}`);
 				let action = null;
@@ -102,33 +127,70 @@ class WSHub extends EventEmitter {
 
 			ws.on('close', function(){
 				debug(`ws connection closed ${ws.webSocketID}`);
+				this.emit(actionTypes.connectionClosed, ws);
 			});
 
 		});
 	}
 
-	_processAction(action, ws){
-		if(action.type === actions.openWsConnection.type){
-			let user = auth.getUser(action.data.login);
-			if(user && user.token === action.data.token){
-				ws.isWsConnectionAuthed = true;
-				let client = new WSClient(action.data.login);
-				client.setWs(ws);
-				ws.wsHubClient = client;
-				if(this._clients[client.login]){
-					this._clients[client.login].destroy();
-				}
-				this._clients[client.login] = client;
-			}
+	getLoginDataFromUrl(url){
+		if(!url){
+			return null;
 		}
 
+		var data = url.split(/[/&]/);
+		if(data.length !== 3){
+			return null;
+		}
+
+		return {
+			login: data[1],
+			token: data[2],
+		}
+	}
+
+	createWsClient(ws, loginData){
+		if(!loginData || !loginData.login || !loginData.token ){
+			debug(`ws connection authed FAILED (no login data) -  ${ws.webSocketID}`);
+			return false;
+		}
+
+		let user = auth.getUser(loginData.login);
+		//todo упростить
+		if(user && user.token === loginData.token){
+			let client = null;
+			if(this._clients[loginData.login]){
+				if(this._clients[loginData.login].token === loginData.token){
+					client = this._clients[loginData.login];
+					debug(`ws connection authed DODE (update client connection) -  ${ws.webSocketID}`)
+				} else{
+					this._clients[loginData.login].destroy();
+					client = new WSClient(loginData.login, loginData.token);
+					debug(`ws connection authed DODE (replace client) -  ${ws.webSocketID}`)
+				}
+			} else{
+				client = new WSClient(loginData.login, loginData.token);
+				debug(`ws connection authed DODE (new client) -  ${ws.webSocketID}`)
+			}
+
+			client.setWs(ws);
+			ws.wsHubClient = client;
+			this._clients[client.login] = client;
+			return true;
+		}else{
+			debug(`ws connection authed FAILED -  ${ws.webSocketID}`)
+			return false;
+		}
+	}
+
+	_processAction(action, ws){
 		if(ws.isWsConnectionAuthed){
 			this.emit(actionTypes.message, action, ws.wsHubClient);
 		}
 	}
 
 	getClients(){
-		return this._clients;
+		return Object.keys(this._clients).map(key => this._clients[key]);
 	}
 
 	getClient(login){
@@ -139,4 +201,55 @@ class WSHub extends EventEmitter {
 var hub = new WSHub();
 
 module.exports.actionTypes = actionTypes;
-module.exports.instace = hub;
+module.exports.instance = hub;
+
+var wsCallbackes = {};
+hub.on(actionTypes.message, function(action, client){
+	if(wsCallbackes[action.type]){
+		wsCallbackes[action.type].forEach(callback =>{
+			callback(client.login, action.data, action.error);
+		});
+	}
+});
+
+module.exports.actionsProxy = function(actionsObject){
+	var result = {};
+	for(let action of Object.keys(actionsObject)){
+		result[action] = {
+			type: actionsObject[action],
+			emitTo: function(target, data, error){
+				if(target === null){
+					hub.getClients().forEach(c => {
+						c.send(this.type, data, error);
+					});
+				} else if(target && target.forEach){
+					target.forEach(c => {
+						if(hub.getClient(c)){
+							hub.getClient(c).send(this.type, data, error);
+						}
+					});
+				} else if(typeof (target) === 'string' && hub.getClient(target)){
+					hub.getClient(target).send(this.type, data, error);
+				}
+			},
+
+			on: function(callback){
+				if(!wsCallbackes[this.type]){
+					wsCallbackes[this.type] = [];
+				}
+
+				wsCallbackes[this.type].push(callback);
+			},
+
+			off: function(callback){
+				if(!wsCallbackes[this.type]){
+					return;
+				}
+
+				wsCallbackes[this.type].splice(wsCallbackes[this.type].indexOf(callback), 1);
+			}
+		};
+	}
+
+	return result;
+}
