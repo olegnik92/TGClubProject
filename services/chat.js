@@ -2,11 +2,11 @@
  * Created by OLEG on 30.01.2016.
  */
 
-'use strict'
+
 var debug = require('debug')('tgc:chat');
 var hubActions = require('../wsHub').actionTypes;
 var hub = require('../wsHub').instance;
-var actions = require('../wsHub').actionsProxy(require('../actions/chat').instance);
+var actions = require('../wsHub').actionsProxy(require('../wsAPI/chat').instance);
 var auth = require('./auth').instance;
 var authActions = require('./auth').actionTypes;
 
