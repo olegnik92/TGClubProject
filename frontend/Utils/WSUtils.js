@@ -3,24 +3,13 @@
  */
 
 'use strict'
-
-var Dispatcher = require('./Dispatcher.js').instance;
-
-var messageTypes = {
-	open: 'WS_OPEN',
-	close: 'WS_CLOSE',
-	error: 'WS_ERROR',
-	message: 'WS_MESSAGE',
-	dead: 'WS_RECONNECTS_DEAD',
-	send: 'WS_SEND'
-};
-
+var store = require('../store').instance;
+var sysActions = require('../actions/system').creators;
 class WSConnection{
 	constructor(){
 		this._host = `ws://${window.location.host}`;
 		this._reconnectTimeout = 10000;
 		this._reconnects = 0;
-		this._reconnectDeadLine = 6;
 		this._messageQueue = [];
 		this._sendIntervalRef = 0;
 		this._sendIntervalTime = 100;
@@ -48,31 +37,24 @@ class WSConnection{
 			return;
 		}
 
-		if(this._reconnects > this._reconnectDeadLine){
-			Dispatcher.dispatchAction(messageTypes.dead);
-			return;
-		}
-
 		this._ws = new WebSocket(this._host + `/${loginData.login}&${loginData.token}`);
 		this._ws.onopen = function(event){
-			Dispatcher.dispatchAction(messageTypes.open, event);
+			store.dispatch(sysActions.connectionOpened());
 			self._sendIntervalRef = setInterval(self._sendFromQueue.bind(self), self._sendIntervalTime);
 		};
 
 		this._ws.onerror = function(error){
-			Dispatcher.dispatchAction(messageTypes.error, null, error);
+			store.dispatch(sysActions.connectionError(error));
 		};
 
 		this._ws.onclose = function(event){
-			Dispatcher.dispatchAction(messageTypes.close, event);
+			store.dispatch(sysActions.connectionClosed());
 			clearInterval(self._sendIntervalRef);
 		};
 
 		this._ws.onmessage = function(event){
-			Dispatcher.dispatchAction(messageTypes.message, event);
-			setTimeout(function(){
-				Dispatcher.dispatch(JSON.parse(event.data));
-			});
+			let mes = JSON.parse(event.data);
+			store.dispatch(sysActions.messageReceived(mes.type, mes.data, mes.error));
 		};
 
 		this._reconnects++;
@@ -85,14 +67,13 @@ class WSConnection{
 			}
 
 			let action = this._messageQueue.shift();
-			Dispatcher.dispatchAction(messageTypes.send, action);
+			store.dispatch(sysActions.messageSent(action.type, action.data, action.error));
 			this._ws.send(JSON.stringify(action));
 		}
 	}
 
 };
 
-module.exports.actionTypes = messageTypes;
 
 var ws = new WSConnection();
 module.exports.instance = ws;

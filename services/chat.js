@@ -2,7 +2,7 @@
  * Created by OLEG on 30.01.2016.
  */
 
-
+'use strict'
 var debug = require('debug')('tgc:chat');
 var hubActions = require('../wsHub').actionTypes;
 var hub = require('../wsHub').instance;

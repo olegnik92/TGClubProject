@@ -5,13 +5,14 @@
 var React = require('react');
 var Provider = require('react-redux').Provider;
 var store = require('./store').instance;
+var AppBar = require('material-ui').AppBar;
 module.exports = React.createClass({
 
 	render: function(){
 		return (
 			<div id="app">
 				<Provider store={store}>
-					<h1>HI THERE!!!</h1>
+					<AppBar title="HI THERE"  iconElementLeft={<span></span>}/>
 				</Provider>
 			</div>
 		);

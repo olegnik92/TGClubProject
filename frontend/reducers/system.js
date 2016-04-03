@@ -38,6 +38,7 @@ module.exports.instance = function(state, action){
 			if(state = sessionStorage.getItem('system')){
 				return JSON.parse(state);
 			}
+
 			return {};
 		}
 	}
