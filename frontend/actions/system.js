@@ -3,7 +3,9 @@
  */
 const actions = {
 	//pageLoaded: 'CL_PAGE_LOADED',
+
 	userLogin: 'CL_SYSTEM_USER_LOGIN',
+	userLoginFailed: 'CL_SYSTEM_USER_LOGIN_FAILED',
 	userLogout: 'CL_SYSTEM_USER_LOGOUT',
 	connectionOpened: 'CL_SYSTEM_CONNECTION_OPENED',
 	connectionError: 'CL_SYSTEM_CONNECTION_ERROR',
@@ -15,6 +17,7 @@ const actions = {
 const creators = {
 	//pageLoaded: () => new Object({ type: actions.pageLoaded}),
 	userLogin: (login, token) => new Object({ type: actions.userLogin, login: login, token: token}),
+	userLoginFailed: (err) => new Object({type: actions.userLoginFailed, error: err}),
 	userLogout: () => new Object({type: actions.userLogout}),
 	connectionOpened: () => new Object({ type: actions.connectionOpened}),
 	connectionError: (error) => new Object({type: actions.connectionError, error: error}),

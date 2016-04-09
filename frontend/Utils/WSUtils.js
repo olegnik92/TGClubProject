@@ -3,10 +3,11 @@
  */
 
 'use strict'
-var store = require('../store').instance;
-var sysActions = require('../actions/system').creators;
+
+
 class WSConnection{
 	constructor(){
+		this.onOpen = this.onError = this.onClose = this.onMessage = this.onMessageSent = () =>{};
 		this._host = `ws://${window.location.host}`;
 		this._reconnectTimeout = 10000;
 		this._reconnects = 0;
@@ -39,22 +40,22 @@ class WSConnection{
 
 		this._ws = new WebSocket(this._host + `/${loginData.login}&${loginData.token}`);
 		this._ws.onopen = function(event){
-			store.dispatch(sysActions.connectionOpened());
+			self.onOpen(event);
 			self._sendIntervalRef = setInterval(self._sendFromQueue.bind(self), self._sendIntervalTime);
 		};
 
 		this._ws.onerror = function(error){
-			store.dispatch(sysActions.connectionError(error));
+			self.onError(error);
 		};
 
 		this._ws.onclose = function(event){
-			store.dispatch(sysActions.connectionClosed());
+			self.onClose(event);
 			clearInterval(self._sendIntervalRef);
 		};
 
 		this._ws.onmessage = function(event){
 			let mes = JSON.parse(event.data);
-			store.dispatch(sysActions.messageReceived(mes.type, mes.data, mes.error));
+			self.onMessage(mes, event);
 		};
 
 		this._reconnects++;
@@ -67,13 +68,12 @@ class WSConnection{
 			}
 
 			let action = this._messageQueue.shift();
-			store.dispatch(sysActions.messageSent(action.type, action.data, action.error));
+			this.onMessageSent(action);
 			this._ws.send(JSON.stringify(action));
 		}
 	}
 
 };
-
 
 var ws = new WSConnection();
 module.exports.instance = ws;
