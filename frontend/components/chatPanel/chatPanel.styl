@@ -1,0 +1,56 @@
+/**
+ * Created by OLEG on 10.04.2016.
+ */
+
+@import '../../preset.styl'
+
+.chatPanel{
+  width: 100%;
+  height: 100%;
+  padding: 12px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+
+
+
+  &-header{
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &-title{
+    fontset: 4;
+  }
+
+  &-body{
+    flex: 1 1 auto;
+    overflow: auto;
+  }
+
+  &-message{
+    padding: 8px 0;
+    border-bottom: 1px solid $borderColor;
+  }
+  &-messageFrom{
+    color: $accent3Color
+    padding-bottom: 4px;
+  }
+
+  &-notAuthed{
+    margin-top: 50%;
+    text-align: center;
+  }
+
+  &-footer{
+    flex: 0 0 aute;
+  }
+
+  &-actions{
+    padding-top: 6px;
+    display: flex;
+    flex-direction: row-reverse;
+  }
+}

@@ -115,7 +115,7 @@ class WSHub extends EventEmitter {
 			this.emit(actionTypes.connection, ws);
 			ws.on('message', (message) => {
 				debug(`ws receive message ${ws.webSocketID} --- ${message}`);
-				let action = null;
+				var action = null;
 				try{
 					action = JSON.parse(message);
 					this._processAction(action, ws);

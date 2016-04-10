@@ -21,13 +21,13 @@ class Chat{
 
 	onUserMessage(user, data){
 
-		var message = {form: user, text: data.text, time: new Date()};
-		if(data.receiverType === 'user'){
-			actions.userReceivedMessage.emitTo([data.receiver, user], message);
-		} else if(data.receiverType === 'all' ){
+		var message = {from: user, to: data.receiver, text: data.text, time: new Date()};
+		if(data.receiver && data.receiver == user){
+			actions.userReceivedMessage.emitTo([user], message);
+		} else if(data.receiver && data.receiver != user) {
+			actions.userReceivedMessage.emitTo([user, data.receiver], message);
+		} else {
 			actions.userReceivedMessage.emitTo(null, message);
-		} else{
-			debug(`unreceived message ${JSON.stringify(action)} form ${JSON.stringify(user)}`);
 		}
 
 	}

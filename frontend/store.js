@@ -6,7 +6,8 @@ var Redux = require('redux');
 var thunk = require('redux-thunk').default;
 
 var reducer = Redux.combineReducers({
-	system: require('./reducers/system').instance
+	system: require('./reducers/system').instance,
+	chat: require('./reducers/chat').instance
 });
 
 var middleware = Redux.applyMiddleware(thunk);

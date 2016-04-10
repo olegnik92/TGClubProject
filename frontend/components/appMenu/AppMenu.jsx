@@ -15,7 +15,8 @@ var AppMenu = React.createClass({
 		loginErrorMessage: React.PropTypes.string,
 		loginDialogOpen: React.PropTypes.bool,
 		onLogin: React.PropTypes.func.isRequired,
-		onLogout: React.PropTypes.func.isRequired
+		onLogout: React.PropTypes.func.isRequired,
+		onAppButtonClick: React.PropTypes.func.isRequired,
 	},
 
 	getInitialState: function() {
@@ -39,7 +40,9 @@ var AppMenu = React.createClass({
 		return(
 
 			<div className="appMenu">
-				<AppBar>
+				<AppBar
+					onLeftIconButtonTouchTap={this.props.onAppButtonClick}
+				>
 					<div className="appMenu-clientInfo">
 						<div className="appMenu-loginCaption">{this.props.login}</div>
 						<div className="appMenu-connectionState">{connectionState}</div>
@@ -53,7 +56,6 @@ var AppMenu = React.createClass({
 					errorMessage={this.props.loginErrorMessage}
 				></LoginDialog>
 
-
 			</div>
 		);
 	}
@@ -61,6 +63,8 @@ var AppMenu = React.createClass({
 
 
 var sysActions = require('../../commands/system').creators;
+var chatActions = require('../../actions/chat').creators;
+
 var connect = require('react-redux').connect;
 var mapStateToProps = function(state){
 	return {
@@ -76,6 +80,9 @@ var mapDispatchToProps = function(dispatch){
 		},
 		onLogout: () =>{
 			dispatch(sysActions.logout());
+		},
+		onAppButtonClick: () => {
+			dispatch(chatActions.chatBoxStateChange(true));
 		}
 	}
 };

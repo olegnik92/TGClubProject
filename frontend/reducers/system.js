@@ -9,17 +9,20 @@ module.exports.instance = function(state, action){
 		case actions.userLogin:{
 			let newState = Object.assign({}, state, {login: action.login, token: action.token, connected: false, loginErrorMessage: ''});
 			sessionStorage.setItem('system', JSON.stringify(newState));
+			sessionStorage.setItem('loginData', JSON.stringify({login: newState.login, token: newState.token}));
 			return newState;
 		}
 
 		case actions.userLoginFailed:{
 			let newState = Object.assign({}, state, {loginErrorMessage: action.error});
+			sessionStorage.setItem('loginData', JSON.stringify({login: '', token: ''}));
 			return newState;
 		}
 
 		case actions.userLogout:{
 			let newState = Object.assign({}, state, {login: null, token: null, connected: false});
 			sessionStorage.setItem('system', JSON.stringify(newState));
+			sessionStorage.setItem('loginData', JSON.stringify({login: '', token: ''}));
 			return newState;
 		}
 
